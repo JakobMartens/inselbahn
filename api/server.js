@@ -20,11 +20,23 @@ const supabase = createClient(
 // Initialize email transporter
 const transporter = nodemailer.createTransport({
   host: process.env.SMTP_HOST,
-  port: process.env.SMTP_PORT,
-  secure: false,
+  port: 587, // Standard SMTP port for STARTTLS
+  secure: false, // true for 465, false for other ports
   auth: {
     user: process.env.SMTP_USER,
     pass: process.env.SMTP_PASS
+  },
+  tls: {
+    rejectUnauthorized: false // Accept self-signed certificates
+  }
+});
+
+// Verify transporter configuration
+transporter.verify(function(error, success) {
+  if (error) {
+    console.log('Email transporter error:', error);
+  } else {
+    console.log('Email server is ready to send messages');
   }
 });
 
