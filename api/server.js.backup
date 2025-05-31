@@ -1,0 +1,523 @@
+require('dotenv').config();
+const express = require('express');
+const cors = require('cors');
+const { createClient } = require('@supabase/supabase-js');
+const { v4: uuidv4 } = require('uuid');
+
+const app = express();
+
+// Simple CORS - allow everything for now
+app.use(cors());
+app.use(express.json());
+
+// Initialize Supabase
+const supabase = createClient(
+  process.env.SUPABASE_URL,
+  process.env.SUPABASE_SERVICE_KEY
+);
+
+console.log('Helgoland API starting...');
+
+// Test endpoint
+app.get('/api/health', (req, res) => {
+  res.json({ 
+    status: 'OK', 
+    message: 'Helgoland Booking API',
+    timestamp: new Date().toISOString()
+  });
+});
+
+// Helper functions
+const generateBookingCode = () => {
+  return 'HE' + Math.random().toString(36).substr(2, 8).toUpperCase();
+};
+
+// Clean up expired reservations
+const cleanupReservations = async () => {
+  try {
+    const { error } = await supabase
+      .from('reservations')
+      .delete()
+      .lt('expires_at', new Date().toISOString());
+    
+    if (error) console.error('Cleanup error:', error);
+  } catch (err) {
+    console.error('Cleanup failed:', err);
+  }
+};
+
+// Run cleanup every minute
+setInterval(cleanupReservations, 60000);
+
+// Check if booking is allowed (1 week advance, 1 hour before tour)
+const isBookingAllowed = (tourDate, tourTime) => {
+  const now = new Date();
+  const tour = new Date(`${tourDate}T${tourTime}`);
+  
+  // Must be at least 1 hour in future
+  const oneHourFromNow = new Date(now.getTime() + 60 * 60 * 1000);
+  if (tour < oneHourFromNow) return false;
+  
+  // Must be within 7 days
+  const sevenDaysFromNow = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
+  if (tour > sevenDaysFromNow) return false;
+  
+  return true;
+};
+
+// Get availability for a specific date
+app.get('/api/availability/:date', async (req, res) => {
+  try {
+    const { date } = req.params;
+    const { tourType } = req.query;
+    
+    console.log(`Getting availability for ${tourType} on ${date}`);
+    
+    // Clean up first
+    await cleanupReservations();
+    
+    // Get tour configuration
+    const { data: tours, error: tourError } = await supabase
+      .from('tours')
+      .select('*')
+      .eq('tour_type', tourType)
+      .lte('valid_from', date)
+      .or(`valid_until.is.null,valid_until.gte.${date}`)
+      .order('valid_from', { ascending: false })
+      .limit(1);
+    
+    if (tourError) {
+      console.error('Tour error:', tourError);
+      throw tourError;
+    }
+    
+    if (!tours || tours.length === 0) {
+      return res.status(404).json({ error: 'Keine Tour-Konfiguration gefunden' });
+    }
+    
+    const tourConfig = tours[0];
+    
+    // Get vehicles
+    const { data: vehicles, error: vehicleError } = await supabase
+      .from('vehicles')
+      .select('*')
+      .eq('tour_type', tourType)
+      .eq('active', true);
+    
+    if (vehicleError) throw vehicleError;
+    
+    // Calculate availability for each time slot
+    const availability = {};
+    
+    for (const time of tourConfig.times) {
+      // Check if booking is allowed for this time
+      const bookingAllowed = isBookingAllowed(date, time);
+      
+      availability[time] = {
+        totalSeats: 0,
+        vehicles: [],
+        bookingAllowed,
+        wheelchairAvailable: tourType === 'UNTERLAND' // For wheelchair option
+      };
+      
+      if (!bookingAllowed) continue;
+      
+      for (const vehicle of vehicles) {
+        // Get bookings
+        const { data: bookings } = await supabase
+          .from('bookings')
+          .select('adults, children')
+          .eq('tour_date', date)
+          .eq('tour_time', time)
+          .eq('vehicle_id', vehicle.id)
+          .eq('status', 'confirmed');
+        
+        // Get reservations
+        const { data: reservations } = await supabase
+          .from('reservations')
+          .select('seats_reserved')
+          .eq('tour_date', date)
+          .eq('tour_time', time)
+          .eq('vehicle_id', vehicle.id)
+          .gt('expires_at', new Date().toISOString());
+        
+        const bookedSeats = (bookings || []).reduce((sum, b) => sum + b.adults + b.children, 0);
+        const reservedSeats = (reservations || []).reduce((sum, r) => sum + r.seats_reserved, 0);
+        const availableSeats = vehicle.capacity - bookedSeats - reservedSeats;
+        
+        availability[time].totalSeats += availableSeats;
+        availability[time].vehicles.push({
+          id: vehicle.id,
+          name: vehicle.name,
+          available: availableSeats,
+          capacity: vehicle.capacity
+        });
+      }
+      
+      availability[time].childrenFree = tourConfig.child_free_times?.includes(time) || false;
+    }
+    
+    res.json({ 
+      date,
+      tourType,
+      availability,
+      prices: {
+        adult: tourConfig.adult_price / 100,
+        child: tourConfig.child_price / 100
+      }
+    });
+    
+  } catch (error) {
+    console.error('Availability error:', error);
+    res.status(500).json({ error: 'Fehler beim Abrufen der Verfügbarkeit' });
+  }
+});
+
+// Create reservation
+app.post('/api/reservations', async (req, res) => {
+  try {
+    const { sessionId, tourDate, tourTime, tourType, seats } = req.body;
+    
+    // Check if booking is allowed
+    if (!isBookingAllowed(tourDate, tourTime)) {
+      return res.status(400).json({ error: 'Buchung nicht mehr möglich (weniger als 1 Stunde vor Tour oder mehr als 7 Tage im Voraus)' });
+    }
+    
+    // Find available vehicle
+    const { data: vehicles } = await supabase
+      .from('vehicles')
+      .select('*')
+      .eq('tour_type', tourType)
+      .eq('active', true);
+    
+    let selectedVehicle = null;
+    
+    for (const vehicle of vehicles) {
+      // Check availability
+      const { data: bookings } = await supabase
+        .from('bookings')
+        .select('adults, children')
+        .eq('tour_date', tourDate)
+        .eq('tour_time', tourTime)
+        .eq('vehicle_id', vehicle.id)
+        .eq('status', 'confirmed');
+      
+      const { data: reservations } = await supabase
+        .from('reservations')
+        .select('seats_reserved')
+        .eq('tour_date', tourDate)
+        .eq('tour_time', tourTime)
+        .eq('vehicle_id', vehicle.id)
+        .gt('expires_at', new Date().toISOString());
+      
+      const bookedSeats = (bookings || []).reduce((sum, b) => sum + b.adults + b.children, 0);
+      const reservedSeats = (reservations || []).reduce((sum, r) => sum + r.seats_reserved, 0);
+      const availableSeats = vehicle.capacity - bookedSeats - reservedSeats;
+      
+      if (availableSeats >= seats) {
+        selectedVehicle = vehicle;
+        break;
+      }
+    }
+    
+    if (!selectedVehicle) {
+      return res.status(400).json({ error: 'Keine verfügbaren Plätze' });
+    }
+    
+    // Create reservation
+    const expiresAt = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
+    
+    const { data: reservation, error } = await supabase
+      .from('reservations')
+      .upsert({
+        session_id: sessionId,
+        tour_date: tourDate,
+        tour_time: tourTime,
+        vehicle_id: selectedVehicle.id,
+        seats_reserved: seats,
+        expires_at: expiresAt
+      }, {
+        onConflict: 'session_id,tour_date,tour_time'
+      })
+      .select()
+      .single();
+    
+    if (error) throw error;
+    
+    res.json({ 
+      reservation,
+      vehicle: selectedVehicle,
+      expiresAt 
+    });
+    
+  } catch (error) {
+    console.error('Reservation error:', error);
+    res.status(500).json({ error: 'Fehler bei der Reservierung' });
+  }
+});
+
+// Create booking
+app.post('/api/bookings', async (req, res) => {
+  try {
+    const {
+      sessionId,
+      tourType,
+      tourDate,
+      tourTime,
+      customerName,
+      customerEmail,
+      customerPhone,
+      adults,
+      children,
+      babies, // Free under 6
+      wheelchair,
+      skipReservationCheck, // For salesman direct sales
+      invoiceRequested,
+      invoiceData
+    } = req.body;
+    
+    let vehicleId;
+    
+    // For direct sales, find available vehicle
+    if (skipReservationCheck) {
+      const { data: vehicles } = await supabase
+        .from('vehicles')
+        .select('*')
+        .eq('tour_type', tourType)
+        .eq('active', true);
+      
+      for (const vehicle of vehicles) {
+        const { data: bookings } = await supabase
+          .from('bookings')
+          .select('adults, children')
+          .eq('tour_date', tourDate)
+          .eq('tour_time', tourTime)
+          .eq('vehicle_id', vehicle.id)
+          .eq('status', 'confirmed');
+        
+        const bookedSeats = (bookings || []).reduce((sum, b) => sum + b.adults + b.children, 0);
+        const totalSeats = adults + children; // Babies don't count for seats
+        
+        if (vehicle.capacity - bookedSeats >= totalSeats) {
+          vehicleId = vehicle.id;
+          break;
+        }
+      }
+      
+      if (!vehicleId) {
+        return res.status(400).json({ error: 'Keine verfügbaren Plätze' });
+      }
+    } else {
+      // Get reservation for online bookings
+      const { data: reservation } = await supabase
+        .from('reservations')
+        .select('*')
+        .eq('session_id', sessionId)
+        .eq('tour_date', tourDate)
+        .eq('tour_time', tourTime)
+        .gt('expires_at', new Date().toISOString())
+        .single();
+      
+      if (!reservation) {
+        return res.status(400).json({ error: 'Reservierung abgelaufen' });
+      }
+      
+      vehicleId = reservation.vehicle_id;
+    }
+    
+    // Get tour config for pricing
+    const { data: tours } = await supabase
+      .from('tours')
+      .select('*')
+      .eq('tour_type', tourType)
+      .lte('valid_from', tourDate)
+      .order('valid_from', { ascending: false })
+      .limit(1);
+    
+    const tourConfig = tours[0];
+    
+    // Calculate price (babies are free)
+    let totalAmount = adults * tourConfig.adult_price;
+    if (!tourConfig.child_free_times?.includes(tourTime)) {
+      totalAmount += children * tourConfig.child_price;
+    }
+    if (wheelchair) {
+      totalAmount += tourConfig.adult_price; // Or child price based on wheelchair passenger
+    }
+    
+    // Create booking
+    const bookingCode = generateBookingCode();
+    const { data: booking, error } = await supabase
+      .from('bookings')
+      .insert({
+        booking_code: bookingCode,
+        tour_type: tourType,
+        tour_date: tourDate,
+        tour_time: tourTime,
+        vehicle_id: vehicleId,
+        customer_name: customerName,
+        customer_email: customerEmail || 'vor-ort@helgolandbahn.de',
+        customer_phone: customerPhone,
+        adults,
+        children,
+        total_amount: totalAmount,
+        status: 'confirmed',
+        payment_status: skipReservationCheck ? 'paid' : 'pending',
+        notes: babies > 0 ? `${babies} Kleinkinder (unter 6)` : null
+      })
+      .select()
+      .single();
+    
+    if (error) throw error;
+    
+    // Delete reservation if it exists
+    if (!skipReservationCheck) {
+      await supabase
+        .from('reservations')
+        .delete()
+        .eq('session_id', sessionId)
+        .eq('tour_date', tourDate)
+        .eq('tour_time', tourTime);
+    }
+    
+    res.json({ 
+      booking,
+      totalAmount: totalAmount / 100
+    });
+    
+  } catch (error) {
+    console.error('Booking error:', error);
+    res.status(500).json({ error: 'Fehler bei der Buchung' });
+  }
+});
+
+// Driver endpoint - get tours
+app.get('/api/driver/tours', async (req, res) => {
+  try {
+    const { date, vehicleId } = req.query;
+    
+    console.log(`Getting tours for vehicle ${vehicleId} on ${date}`);
+    
+    const { data: bookings, error } = await supabase
+      .from('bookings')
+      .select('*')
+      .eq('tour_date', date)
+      .eq('vehicle_id', vehicleId)
+      .eq('status', 'confirmed')
+      .order('tour_time');
+    
+    if (error) throw error;
+    
+    // Group by time
+    const toursByTime = {};
+    bookings.forEach(booking => {
+      const time = booking.tour_time;
+      if (!toursByTime[time]) {
+        toursByTime[time] = {
+          time,
+          tourType: booking.tour_type,
+          passengers: []
+        };
+      }
+      
+      toursByTime[time].passengers.push({
+        name: booking.customer_name,
+        adults: booking.adults,
+        children: booking.children,
+        notes: booking.notes
+      });
+    });
+    
+    res.json({ 
+      date,
+      vehicleId,
+      tours: Object.values(toursByTime) 
+    });
+    
+  } catch (error) {
+    console.error('Driver tours error:', error);
+    res.status(500).json({ error: 'Fehler beim Abrufen der Touren' });
+  }
+});
+
+// Salesman endpoints
+app.get('/api/salesman/availability', async (req, res) => {
+  try {
+    const { date = new Date().toISOString().split('T')[0] } = req.query;
+    
+    // Get all tour types
+    const tourTypes = ['UNTERLAND', 'PREMIUM'];
+    const availability = {};
+    
+    for (const tourType of tourTypes) {
+      const { data: tours } = await supabase
+        .from('tours')
+        .select('*')
+        .eq('tour_type', tourType)
+        .lte('valid_from', date)
+        .or(`valid_until.is.null,valid_until.gte.${date}`)
+        .limit(1);
+      
+      if (!tours || tours.length === 0) continue;
+      
+      const tourConfig = tours[0];
+      const { data: vehicles } = await supabase
+        .from('vehicles')
+        .select('*')
+        .eq('tour_type', tourType)
+        .eq('active', true);
+      
+      availability[tourType] = {
+        times: {},
+        prices: {
+          adult: tourConfig.adult_price / 100,
+          child: tourConfig.child_price / 100
+        }
+      };
+      
+      for (const time of tourConfig.times) {
+        let totalAvailable = 0;
+        let totalCapacity = 0;
+        
+        for (const vehicle of vehicles) {
+          const { data: bookings } = await supabase
+            .from('bookings')
+            .select('adults, children')
+            .eq('tour_date', date)
+            .eq('tour_time', time)
+            .eq('vehicle_id', vehicle.id)
+            .eq('status', 'confirmed');
+          
+          const bookedSeats = (bookings || []).reduce((sum, b) => sum + b.adults + b.children, 0);
+          const available = vehicle.capacity - bookedSeats;
+          
+          totalAvailable += available;
+          totalCapacity += vehicle.capacity;
+        }
+        
+        availability[tourType].times[time] = {
+          available: totalAvailable,
+          capacity: totalCapacity,
+          childrenFree: tourConfig.child_free_times?.includes(time) || false
+        };
+      }
+    }
+    
+    res.json({ date, availability });
+    
+  } catch (error) {
+    console.error('Salesman availability error:', error);
+    res.status(500).json({ error: 'Fehler beim Abrufen der Verfügbarkeit' });
+  }
+});
+
+// Start server
+const PORT = process.env.PORT || 3000;
+app.listen(PORT, () => {
+  console.log(`Server running on port ${PORT}`);
+  console.log('API endpoints available:');
+  console.log(`- Health: /api/health`);
+  console.log(`- Availability: /api/availability/:date?tourType=PREMIUM`);
+  console.log(`- Driver tours: /api/driver/tours?date=YYYY-MM-DD&vehicleId=XX`);
+  console.log(`- Salesman availability: /api/salesman/availability?date=YYYY-MM-DD`);
+});

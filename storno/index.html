@@ -1,0 +1,404 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Stornierung - Inselbahn Rundfahrten Helgoland</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #f5f5f5;
+            color: #333;
+            line-height: 1.6;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .header {
+            background: #0066cc;
+            color: white;
+            padding: 2rem 1rem;
+            text-align: center;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        
+        .header h1 {
+            font-size: 1.8rem;
+            margin-bottom: 0.5rem;
+        }
+        
+        .header p {
+            font-size: 1.1rem;
+            opacity: 0.9;
+        }
+        
+        .container {
+            flex: 1;
+            max-width: 500px;
+            margin: 2rem auto;
+            padding: 0 1rem;
+            width: 100%;
+        }
+        
+        .card {
+            background: white;
+            border-radius: 8px;
+            padding: 2rem;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+        
+        .form-group label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: 500;
+            color: #555;
+        }
+        
+        .form-group input {
+            width: 100%;
+            padding: 0.75rem;
+            border: 2px solid #ddd;
+            border-radius: 6px;
+            font-size: 1rem;
+            transition: border-color 0.2s;
+        }
+        
+        .form-group input:focus {
+            outline: none;
+            border-color: #0066cc;
+        }
+        
+        .form-group input.error {
+            border-color: #dc3545;
+        }
+        
+        .help-text {
+            font-size: 0.875rem;
+            color: #666;
+            margin-top: 0.25rem;
+        }
+        
+        .error-message {
+            color: #dc3545;
+            font-size: 0.875rem;
+            margin-top: 0.25rem;
+            display: none;
+        }
+        
+        .error-message.active {
+            display: block;
+        }
+        
+        .submit-btn {
+            width: 100%;
+            padding: 1rem;
+            background: #0066cc;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            font-size: 1.1rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        
+        .submit-btn:hover {
+            background: #0052a3;
+        }
+        
+        .submit-btn:active {
+            transform: scale(0.98);
+        }
+        
+        .submit-btn:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+        
+        .info-box {
+            background: #f0f8ff;
+            border: 1px solid #bee5eb;
+            border-radius: 6px;
+            padding: 1rem;
+            margin-bottom: 1.5rem;
+        }
+        
+        .info-box h3 {
+            color: #0066cc;
+            margin-bottom: 0.5rem;
+            font-size: 1.1rem;
+        }
+        
+        .info-box ul {
+            margin-left: 1.5rem;
+            color: #555;
+        }
+        
+        .info-box li {
+            margin-bottom: 0.25rem;
+        }
+        
+        .loading {
+            display: none;
+            text-align: center;
+            padding: 2rem;
+        }
+        
+        .loading.active {
+            display: block;
+        }
+        
+        .spinner {
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #0066cc;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 1rem;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        .success-message {
+            background: #d4edda;
+            border: 1px solid #c3e6cb;
+            color: #155724;
+            padding: 1rem;
+            border-radius: 6px;
+            display: none;
+            text-align: center;
+        }
+        
+        .success-message.active {
+            display: block;
+        }
+        
+        .success-message h3 {
+            margin-bottom: 0.5rem;
+        }
+        
+        .general-error {
+            background: #f8d7da;
+            border: 1px solid #f5c6cb;
+            color: #721c24;
+            padding: 1rem;
+            border-radius: 6px;
+            display: none;
+            margin-bottom: 1rem;
+        }
+        
+        .general-error.active {
+            display: block;
+        }
+        
+        .footer {
+            background: #333;
+            color: white;
+            text-align: center;
+            padding: 1rem;
+            font-size: 0.9rem;
+        }
+        
+        .footer a {
+            color: #4dabf7;
+            text-decoration: none;
+        }
+        
+        @media (max-width: 600px) {
+            .header h1 {
+                font-size: 1.5rem;
+            }
+            
+            .card {
+                padding: 1.5rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>Inselbahn Rundfahrten Helgoland</h1>
+        <p>Stornierung Ihrer Buchung</p>
+    </div>
+    
+    <div class="container">
+        <div class="card">
+            <div class="info-box">
+                <h3>Stornierungsbedingungen</h3>
+                <ul>
+                    <li>Standardbuchungen: bis 24 Stunden vor Tourbeginn</li>
+                    <li>Gruppen ab 8 Personen: bis 72 Stunden vor Tourbeginn</li>
+                    <li>Die Rückerstattung erfolgt automatisch auf das ursprüngliche Zahlungsmittel</li>
+                </ul>
+            </div>
+            
+            <div class="general-error" id="generalError"></div>
+            
+            <form id="cancelForm">
+                <div class="form-group">
+                    <label for="bookingCode">Buchungscode</label>
+                    <input 
+                        type="text" 
+                        id="bookingCode" 
+                        name="bookingCode" 
+                        placeholder="z.B. HE12345ABC"
+                        required
+                        pattern="HE[A-Z0-9]{8}"
+                        maxlength="10"
+                        style="text-transform: uppercase;"
+                    >
+                    <div class="help-text">Den Buchungscode finden Sie in Ihrer Bestätigungsemail</div>
+                    <div class="error-message" id="bookingCodeError">Bitte geben Sie einen gültigen Buchungscode ein</div>
+                </div>
+                
+                <div class="form-group">
+                    <label for="email">E-Mail-Adresse</label>
+                    <input 
+                        type="email" 
+                        id="email" 
+                        name="email" 
+                        placeholder="ihre.email@beispiel.de"
+                        required
+                    >
+                    <div class="help-text">Die E-Mail-Adresse, die Sie bei der Buchung verwendet haben</div>
+                    <div class="error-message" id="emailError">Bitte geben Sie eine gültige E-Mail-Adresse ein</div>
+                </div>
+                
+                <button type="submit" class="submit-btn" id="submitBtn">
+                    Buchung stornieren
+                </button>
+            </form>
+            
+            <div class="loading" id="loading">
+                <div class="spinner"></div>
+                <p>Ihre Stornierung wird bearbeitet...</p>
+            </div>
+            
+            <div class="success-message" id="successMessage">
+                <h3>✓ Stornierung erfolgreich!</h3>
+                <p>Ihre Buchung wurde erfolgreich storniert.</p>
+                <p>Sie erhalten in Kürze eine Bestätigungsemail.</p>
+            </div>
+        </div>
+    </div>
+    
+    <div class="footer">
+        <p>Bei Fragen erreichen Sie uns unter <a href="mailto:booking@helgolandbahn.de">booking@helgolandbahn.de</a></p>
+    </div>
+    
+    <script>
+        const API_URL = 'https://api.helgolandbahn.de/api';
+        
+        // Form validation
+        const form = document.getElementById('cancelForm');
+        const bookingCodeInput = document.getElementById('bookingCode');
+        const emailInput = document.getElementById('email');
+        const submitBtn = document.getElementById('submitBtn');
+        const loading = document.getElementById('loading');
+        const successMessage = document.getElementById('successMessage');
+        const generalError = document.getElementById('generalError');
+        
+        // Auto-uppercase booking code
+        bookingCodeInput.addEventListener('input', function() {
+            this.value = this.value.toUpperCase();
+        });
+        
+        // Clear errors on input
+        bookingCodeInput.addEventListener('input', function() {
+            this.classList.remove('error');
+            document.getElementById('bookingCodeError').classList.remove('active');
+            generalError.classList.remove('active');
+        });
+        
+        emailInput.addEventListener('input', function() {
+            this.classList.remove('error');
+            document.getElementById('emailError').classList.remove('active');
+            generalError.classList.remove('active');
+        });
+        
+        // Form submission
+        form.addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            // Reset states
+            generalError.classList.remove('active');
+            
+            // Validate inputs
+            let isValid = true;
+            
+            const bookingCode = bookingCodeInput.value.trim();
+            if (!bookingCode || !/^HE[A-Z0-9]{8}$/.test(bookingCode)) {
+                bookingCodeInput.classList.add('error');
+                document.getElementById('bookingCodeError').classList.add('active');
+                isValid = false;
+            }
+            
+            const email = emailInput.value.trim();
+            if (!email || !email.includes('@')) {
+                emailInput.classList.add('error');
+                document.getElementById('emailError').classList.add('active');
+                isValid = false;
+            }
+            
+            if (!isValid) return;
+            
+            // Show loading state
+            form.style.display = 'none';
+            loading.classList.add('active');
+            submitBtn.disabled = true;
+            
+            try {
+                const response = await fetch(`${API_URL}/bookings/cancel`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        bookingCode: bookingCode,
+                        email: email
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok) {
+                    // Success
+                    loading.classList.remove('active');
+                    successMessage.classList.add('active');
+                } else {
+                    // Error
+                    loading.classList.remove('active');
+                    form.style.display = 'block';
+                    submitBtn.disabled = false;
+                    
+                    generalError.textContent = data.error || 'Ein Fehler ist aufgetreten. Bitte versuchen Sie es später erneut.';
+                    generalError.classList.add('active');
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                loading.classList.remove('active');
+                form.style.display = 'block';
+                submitBtn.disabled = false;
+                
+                generalError.textContent = 'Verbindungsfehler. Bitte prüfen Sie Ihre Internetverbindung und versuchen Sie es erneut.';
+                generalError.classList.add('active');
+            }
+        });
+    </script>
+</body>
+</html>

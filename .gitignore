@@ -1,0 +1,26 @@
+# Environment variables
+.env
+*.env
+
+# Node modules
+node_modules/
+*/node_modules/
+
+# Logs
+*.log
+npm-debug.log*
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# IDE files
+.vscode/
+.idea/
+
+# PM2
+ecosystem.config.js
+
+# Temporary files
+*.tmp
+*.temp
