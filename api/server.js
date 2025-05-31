@@ -647,6 +647,15 @@ app.get('/api/admin/bookings', async (req, res) => {
     
     const { data: bookings, error } = await query;
     
+    // Sort bookings by date and time
+    if (bookings) {
+        bookings.sort((a, b) => {
+            const dateA = new Date(a.tour_date + ' ' + a.tour_time);
+            const dateB = new Date(b.tour_date + ' ' + b.tour_time);
+            return dateB - dateA; // Newest first
+        });
+    }
+    
     if (error) throw error;
     
     res.json({ bookings });
