@@ -964,22 +964,26 @@
                 <canvas id="revenueChart"></canvas>
             </div>
         </div>
-        
+
         <!-- Payment Methods Pie Chart -->
         <div class="chart-container">
             <div class="chart-title">Umsatz nach Zahlungsart</div>
             <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 2rem;">
-                <canvas id="paymentChart" height="250"></canvas>
+                <div style="position: relative; height: 250px;">
+                    <canvas id="paymentChart"></canvas>
+                </div>
                 <div class="payment-breakdown" id="paymentBreakdown">
                     <!-- Will be populated dynamically -->
                 </div>
-            </div>
         </div>
-        
+    </div>
+
         <!-- Tour Performance Chart -->
         <div class="chart-container">
             <div class="chart-title">Tour-Auslastung</div>
-            <canvas id="occupancyChart" height="200"></canvas>
+            <div style="position: relative; height: 200px;">
+                <canvas id="occupancyChart"></canvas>
+            </div>
         </div>
         
         <!-- Detailed Tour Statistics -->
