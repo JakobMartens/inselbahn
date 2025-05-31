@@ -4,6 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
     <title>Inselbahn Rundfahrten Helgoland - Verwaltung</title>
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
     <style>
         * {
             margin: 0;
@@ -13,7 +15,7 @@
         }
         
         body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            font-family: 'Montserrat', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
             background: #f5f5f5;
             color: #333;
             user-select: none;
@@ -33,6 +35,7 @@
         
         .header h1 {
             font-size: 1.5rem;
+            font-weight: 600;
         }
         
         .header .subtitle {
@@ -84,14 +87,21 @@
             to { opacity: 1; }
         }
         
-        /* Sales tab styles (existing) */
+        /* Sales tab styles */
         .date-selector {
             background: white;
-            padding: 1rem;
+            padding: 1.5rem;
             margin: 1rem;
-            border-radius: 8px;
+            border-radius: 12px;
             text-align: center;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+        }
+        
+        .date-selector h2 {
+            font-size: 1.3rem;
+            font-weight: 600;
+            margin-bottom: 1rem;
+            color: #333;
         }
         
         .date-buttons {
@@ -108,7 +118,7 @@
             border: none;
             border-radius: 8px;
             font-size: 1.2rem;
-            font-weight: bold;
+            font-weight: 600;
             cursor: pointer;
             transition: all 0.2s;
         }
@@ -127,8 +137,8 @@
             background: white;
             padding: 1rem;
             margin-bottom: 1rem;
-            border-radius: 8px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            border-radius: 12px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
         }
         
         .filter-row {
@@ -139,17 +149,18 @@
         }
         
         .filter-row input, .filter-row select {
-            padding: 0.5rem;
+            padding: 0.75rem;
             border: 1px solid #ddd;
-            border-radius: 4px;
+            border-radius: 6px;
             font-size: 1rem;
+            font-family: 'Montserrat', sans-serif;
         }
         
         .booking-list {
             background: white;
-            border-radius: 8px;
+            border-radius: 12px;
             overflow: hidden;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
         }
         
         .booking-item {
@@ -171,7 +182,7 @@
         }
         
         .booking-code {
-            font-weight: bold;
+            font-weight: 600;
             color: #0066cc;
         }
         
@@ -212,9 +223,10 @@
         .action-btn {
             padding: 0.5rem 1rem;
             border: none;
-            border-radius: 4px;
+            border-radius: 6px;
             cursor: pointer;
             font-size: 0.9rem;
+            font-weight: 500;
             transition: all 0.2s;
         }
         
@@ -233,18 +245,20 @@
             background: white;
             padding: 1rem;
             margin-bottom: 1rem;
-            border-radius: 8px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            border-radius: 12px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
             display: flex;
             gap: 1rem;
             flex-wrap: wrap;
         }
         
         .stats-filters select {
-            padding: 0.5rem;
+            padding: 0.75rem 1rem;
             border: 1px solid #ddd;
-            border-radius: 4px;
+            border-radius: 6px;
             font-size: 1rem;
+            font-family: 'Montserrat', sans-serif;
+            min-width: 150px;
         }
         
         .stats-grid {
@@ -257,58 +271,71 @@
         .stat-card {
             background: white;
             padding: 1.5rem;
-            border-radius: 8px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            border-radius: 12px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
             text-align: center;
+            transition: transform 0.2s;
+        }
+        
+        .stat-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.12);
         }
         
         .stat-label {
             color: #666;
             font-size: 0.9rem;
             margin-bottom: 0.5rem;
+            font-weight: 500;
         }
         
         .stat-value {
-            font-size: 2rem;
-            font-weight: bold;
+            font-size: 2.2rem;
+            font-weight: 700;
             color: #0066cc;
         }
         
         .chart-container {
             background: white;
-            padding: 1.5rem;
-            border-radius: 8px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-            margin-bottom: 1rem;
+            padding: 2rem;
+            border-radius: 12px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+            margin-bottom: 1.5rem;
         }
         
         .chart-title {
-            font-size: 1.2rem;
-            font-weight: bold;
-            margin-bottom: 1rem;
+            font-size: 1.3rem;
+            font-weight: 600;
+            margin-bottom: 1.5rem;
             color: #333;
         }
         
         .payment-breakdown {
             display: grid;
-            gap: 0.5rem;
+            gap: 0.75rem;
         }
         
         .payment-row {
             display: flex;
             justify-content: space-between;
-            padding: 0.5rem;
-            background: #f5f5f5;
-            border-radius: 4px;
+            padding: 0.75rem 1rem;
+            background: #f8f9fa;
+            border-radius: 6px;
+            transition: background 0.2s;
+        }
+        
+        .payment-row:hover {
+            background: #e9ecef;
         }
         
         .payment-method {
-            font-weight: 500;
+            font-weight: 600;
+            color: #333;
         }
         
         .payment-amount {
             color: #0066cc;
-            font-weight: bold;
+            font-weight: 600;
         }
         
         .tour-stats-grid {
@@ -319,17 +346,23 @@
         
         .tour-stat-box {
             background: #f9f9f9;
-            padding: 1rem;
-            border-radius: 6px;
+            padding: 1.25rem;
+            border-radius: 8px;
             border: 1px solid #e0e0e0;
+            transition: all 0.2s;
+        }
+        
+        .tour-stat-box:hover {
+            background: #fff;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
         }
         
         .tour-stat-header {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin-bottom: 0.75rem;
-            font-weight: bold;
+            margin-bottom: 1rem;
+            font-weight: 600;
             color: #333;
         }
         
@@ -338,9 +371,10 @@
         }
         
         .occupancy-badge {
-            padding: 0.25rem 0.5rem;
-            border-radius: 4px;
+            padding: 0.25rem 0.75rem;
+            border-radius: 20px;
             font-size: 0.875rem;
+            font-weight: 500;
             background: #e3f2fd;
             color: #1565c0;
         }
@@ -366,6 +400,19 @@
             color: #333;
         }
         
+        .progress-bar {
+            margin-top: 0.75rem;
+            background: #e0e0e0;
+            height: 8px;
+            border-radius: 4px;
+            overflow: hidden;
+        }
+        
+        .progress-fill {
+            height: 100%;
+            transition: width 0.3s ease;
+        }
+        
         /* Modal styles */
         .modal {
             display: none;
@@ -388,23 +435,25 @@
         .modal-content {
             background: white;
             padding: 2rem;
-            border-radius: 8px;
+            border-radius: 12px;
             max-width: 500px;
             width: 90%;
             max-height: 90vh;
             overflow-y: auto;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.15);
         }
         
         .modal-header {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin-bottom: 1rem;
+            margin-bottom: 1.5rem;
         }
         
         .modal-title {
             font-size: 1.3rem;
-            font-weight: bold;
+            font-weight: 600;
+            color: #333;
         }
         
         .modal-close {
@@ -413,15 +462,22 @@
             font-size: 1.5rem;
             cursor: pointer;
             color: #666;
+            padding: 0.25rem;
+            line-height: 1;
+        }
+        
+        .modal-close:hover {
+            color: #333;
         }
         
         .modal input, .modal textarea {
             width: 100%;
             padding: 0.75rem;
             border: 1px solid #ddd;
-            border-radius: 4px;
+            border-radius: 6px;
             font-size: 1rem;
             margin-bottom: 1rem;
+            font-family: 'Montserrat', sans-serif;
         }
         
         .modal textarea {
@@ -432,16 +488,17 @@
         .modal-actions {
             display: flex;
             gap: 1rem;
-            margin-top: 1rem;
+            margin-top: 1.5rem;
             justify-content: flex-end;
         }
         
         .modal-btn {
             padding: 0.75rem 1.5rem;
             border: none;
-            border-radius: 4px;
+            border-radius: 6px;
             cursor: pointer;
             font-size: 1rem;
+            font-weight: 500;
             transition: all 0.2s;
         }
         
@@ -450,12 +507,20 @@
             color: white;
         }
         
+        .modal-btn.primary:hover {
+            background: #0052a3;
+        }
+        
         .modal-btn.secondary {
-            background: #ccc;
+            background: #e9ecef;
             color: #333;
         }
         
-        /* Tour grid and other existing styles... */
+        .modal-btn.secondary:hover {
+            background: #dee2e6;
+        }
+        
+        /* Tour grid styles */
         .tour-grid {
             padding: 1rem;
             display: grid;
@@ -464,9 +529,9 @@
         
         .tour-section {
             background: white;
-            border-radius: 8px;
+            border-radius: 12px;
             overflow: hidden;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
         }
         
         .tour-header {
@@ -474,7 +539,7 @@
             color: white;
             padding: 1rem;
             font-size: 1.3rem;
-            font-weight: bold;
+            font-weight: 600;
             text-align: center;
         }
         
@@ -519,18 +584,19 @@
             justify-content: space-between;
             align-items: center;
             font-size: 1.2rem;
-            font-weight: bold;
+            font-weight: 600;
             margin-bottom: 0.5rem;
         }
         
         .capacity {
             font-size: 1rem;
             color: #666;
+            font-weight: 400;
         }
         
         .capacity.low {
             color: #ff6600;
-            font-weight: bold;
+            font-weight: 600;
         }
         
         .free-kids {
@@ -539,9 +605,10 @@
             padding: 0.25rem 0.5rem;
             border-radius: 4px;
             font-size: 0.9rem;
+            font-weight: 500;
         }
         
-        /* Keep all the existing ticket selector styles... */
+        /* Ticket selector styles */
         .ticket-selector {
             position: fixed;
             bottom: 0;
@@ -568,6 +635,7 @@
         
         .customer-section h3 {
             font-size: 1.1rem;
+            font-weight: 600;
             margin-bottom: 0.75rem;
             color: #333;
         }
@@ -576,8 +644,8 @@
             width: 100%;
             padding: 0.75rem;
             margin-bottom: 0.5rem;
-            border: 1px solid #ccc;
-            border-radius: 4px;
+            border: 1px solid #ddd;
+            border-radius: 6px;
             font-size: 1rem;
         }
         
@@ -600,7 +668,7 @@
         
         .ticket-name {
             font-size: 1.2rem;
-            font-weight: bold;
+            font-weight: 600;
             margin-bottom: 0.25rem;
         }
         
@@ -640,7 +708,7 @@
         
         .ticket-count {
             font-size: 1.5rem;
-            font-weight: bold;
+            font-weight: 600;
             min-width: 40px;
             text-align: center;
         }
@@ -665,6 +733,7 @@
         
         .payment-section h3 {
             font-size: 1.1rem;
+            font-weight: 600;
             margin-bottom: 0.75rem;
             color: #333;
         }
@@ -693,6 +762,52 @@
         .payment-method.selected {
             background: #e6f2ff;
             border-color: #0066cc;
+        }
+        
+        .invoice-section {
+            margin-top: 1rem;
+            padding: 1rem;
+            background: #f9f9f9;
+            border-radius: 8px;
+            display: none;
+        }
+        
+        .invoice-section.active {
+            display: block;
+        }
+        
+        .bottom-section {
+            padding: 1rem 0;
+        }
+        
+        .total-price {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: #0066cc;
+            text-align: center;
+            margin-bottom: 1rem;
+        }
+        
+        .book-btn {
+            width: 100%;
+            padding: 1rem;
+            background: #00a651;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 1.2rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        
+        .book-btn:active {
+            transform: scale(0.98);
+        }
+        
+        .book-btn:disabled {
+            background: #ccc;
+            cursor: not-allowed;
         }
         
         .loading {
@@ -739,6 +854,10 @@
             }
             
             .filter-row {
+                grid-template-columns: 1fr;
+            }
+            
+            .payment-methods {
                 grid-template-columns: 1fr;
             }
         }
@@ -838,15 +957,32 @@
             </div>
         </div>
         
+        <!-- Revenue Chart -->
+        <div class="chart-container">
+            <div class="chart-title">Umsatzentwicklung</div>
+            <canvas id="revenueChart" height="300"></canvas>
+        </div>
+        
+        <!-- Payment Methods Pie Chart -->
         <div class="chart-container">
             <div class="chart-title">Umsatz nach Zahlungsart</div>
-            <div class="payment-breakdown" id="paymentBreakdown">
-                <!-- Will be populated dynamically -->
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 2rem;">
+                <canvas id="paymentChart" height="250"></canvas>
+                <div class="payment-breakdown" id="paymentBreakdown">
+                    <!-- Will be populated dynamically -->
+                </div>
             </div>
         </div>
         
+        <!-- Tour Performance Chart -->
         <div class="chart-container">
-            <div class="chart-title">Tour-Statistiken</div>
+            <div class="chart-title">Tour-Auslastung</div>
+            <canvas id="occupancyChart" height="200"></canvas>
+        </div>
+        
+        <!-- Detailed Tour Statistics -->
+        <div class="chart-container">
+            <div class="chart-title">Detaillierte Tour-Statistiken</div>
             <div id="tourStatistics">
                 <!-- Will be populated dynamically -->
             </div>
@@ -892,9 +1028,98 @@
         </div>
     </div>
     
-    <!-- Keep existing ticket selector -->
+    <!-- Ticket Selector -->
     <div id="ticketSelector" class="ticket-selector">
-        <!-- All existing ticket selector content... -->
+        <div class="customer-section">
+            <h3>Kundendaten (optional)</h3>
+            <input type="text" id="customerName" placeholder="Name">
+            <input type="email" id="customerEmail" placeholder="E-Mail">
+            <div class="optional-label">Nur bei Zahlung auf Rechnung erforderlich</div>
+        </div>
+        
+        <div class="ticket-type">
+            <div class="ticket-info">
+                <div class="ticket-name">Erwachsene</div>
+                <div class="ticket-price" id="adultPrice">€11</div>
+            </div>
+            <div class="ticket-controls">
+                <button class="ticket-btn" onclick="updateTickets('adults', -1)">-</button>
+                <div class="ticket-count" id="adultCount">0</div>
+                <button class="ticket-btn" onclick="updateTickets('adults', 1)">+</button>
+            </div>
+        </div>
+        
+        <div class="ticket-type">
+            <div class="ticket-info">
+                <div class="ticket-name">Kinder (6-14 Jahre)</div>
+                <div class="ticket-price" id="childPrice">€6</div>
+            </div>
+            <div class="ticket-controls">
+                <button class="ticket-btn" onclick="updateTickets('children', -1)">-</button>
+                <div class="ticket-count" id="childCount">0</div>
+                <button class="ticket-btn" onclick="updateTickets('children', 1)">+</button>
+            </div>
+        </div>
+        
+        <div class="ticket-type">
+            <div class="ticket-info">
+                <div class="ticket-name">Kleinkinder (unter 6)</div>
+                <div class="ticket-price">Kostenlos</div>
+            </div>
+            <div class="ticket-controls">
+                <button class="ticket-btn" onclick="updateTickets('babies', -1)">-</button>
+                <div class="ticket-count" id="babyCount">0</div>
+                <button class="ticket-btn" onclick="updateTickets('babies', 1)">+</button>
+            </div>
+        </div>
+        
+        <div class="wheelchair-section" id="wheelchairSection" style="display: none;">
+            <h3>Rollstuhlplätze</h3>
+            <div class="ticket-type">
+                <div class="ticket-info">
+                    <div class="ticket-name">Erwachsene (Rollstuhl)</div>
+                    <div class="ticket-price">€11</div>
+                </div>
+                <div class="ticket-controls">
+                    <button class="ticket-btn" onclick="updateTickets('wheelchairAdults', -1)">-</button>
+                    <div class="ticket-count" id="wheelchairAdultCount">0</div>
+                    <button class="ticket-btn" onclick="updateTickets('wheelchairAdults', 1)">+</button>
+                </div>
+            </div>
+            <div class="ticket-type">
+                <div class="ticket-info">
+                    <div class="ticket-name">Kinder (Rollstuhl)</div>
+                    <div class="ticket-price">€6</div>
+                </div>
+                <div class="ticket-controls">
+                    <button class="ticket-btn" onclick="updateTickets('wheelchairChildren', -1)">-</button>
+                    <div class="ticket-count" id="wheelchairChildCount">0</div>
+                    <button class="ticket-btn" onclick="updateTickets('wheelchairChildren', 1)">+</button>
+                </div>
+            </div>
+            <div class="wheelchair-info">Rollstühle benötigen 3 Plätze, zahlen aber nur für 1 Person</div>
+        </div>
+        
+        <div class="payment-section">
+            <h3>Zahlungsart</h3>
+            <div class="payment-methods">
+                <div class="payment-method selected" onclick="selectPayment('bar')">Bar</div>
+                <div class="payment-method" onclick="selectPayment('sumup')">SumUp</div>
+                <div class="payment-method" onclick="selectPayment('rechnung')">Auf Rechnung</div>
+            </div>
+            <div class="invoice-section" id="invoiceSection">
+                <h4>Rechnungsdaten</h4>
+                <input type="text" id="companyName" placeholder="Firmenname *" required>
+                <input type="text" id="taxId" placeholder="Steuernummer (optional)">
+                <input type="text" id="street" placeholder="Straße und Hausnummer">
+                <input type="text" id="city" placeholder="PLZ und Stadt">
+            </div>
+        </div>
+        
+        <div class="bottom-section">
+            <div class="total-price" id="totalPrice">Gesamt: €0</div>
+            <button class="book-btn" onclick="confirmBooking()">Buchung abschließen</button>
+        </div>
     </div>
     
     <div id="overlay" class="overlay"></div>
@@ -933,6 +1158,11 @@
             wheelchairChildren: 0
         };
         
+        // Chart variables
+        let revenueChart = null;
+        let paymentChart = null;
+        let occupancyChart = null;
+        
         // Initialize
         loadAvailability();
         
@@ -955,7 +1185,7 @@
             }
         }
         
-        // Sales functionality (keep all existing)
+        // Sales functionality
         document.getElementById('todayBtn').addEventListener('click', function() {
             selectDate('today', this);
         });
@@ -1064,6 +1294,205 @@
             }
             
             tourGrid.innerHTML = html;
+        }
+        
+        function selectTour(tourType, time, element) {
+            selectedTour = {
+                type: tourType,
+                time: time,
+                date: getDateString(),
+                prices: availabilityData[tourType].prices,
+                childrenFree: availabilityData[tourType].times[time].childrenFree
+            };
+            
+            // Reset tickets
+            tickets = {
+                adults: 0,
+                children: 0,
+                babies: 0,
+                wheelchairAdults: 0,
+                wheelchairChildren: 0
+            };
+            
+            // Update UI
+            document.querySelectorAll('.time-slot').forEach(slot => {
+                slot.classList.remove('selected');
+            });
+            element.classList.add('selected');
+            
+            // Update ticket selector
+            document.getElementById('adultPrice').textContent = `€${selectedTour.prices.adult}`;
+            document.getElementById('childPrice').textContent = selectedTour.childrenFree ? 'Kostenlos!' : `€${selectedTour.prices.child}`;
+            
+            // Show/hide wheelchair section
+            document.getElementById('wheelchairSection').style.display = 
+                tourType === 'UNTERLAND' ? 'block' : 'none';
+            
+            // Reset counts
+            updateTicketDisplay();
+            
+            // Show ticket selector
+            document.getElementById('ticketSelector').classList.add('active');
+            document.getElementById('overlay').classList.add('active');
+        }
+        
+        function updateTickets(type, change) {
+            tickets[type] = Math.max(0, tickets[type] + change);
+            updateTicketDisplay();
+        }
+        
+        function updateTicketDisplay() {
+            document.getElementById('adultCount').textContent = tickets.adults;
+            document.getElementById('childCount').textContent = tickets.children;
+            document.getElementById('babyCount').textContent = tickets.babies;
+            document.getElementById('wheelchairAdultCount').textContent = tickets.wheelchairAdults;
+            document.getElementById('wheelchairChildCount').textContent = tickets.wheelchairChildren;
+            
+            // Calculate total price
+            let total = tickets.adults * selectedTour.prices.adult;
+            if (!selectedTour.childrenFree) {
+                total += tickets.children * selectedTour.prices.child;
+            }
+            total += tickets.wheelchairAdults * selectedTour.prices.adult;
+            if (!selectedTour.childrenFree) {
+                total += tickets.wheelchairChildren * selectedTour.prices.child;
+            }
+            
+            document.getElementById('totalPrice').textContent = `Gesamt: €${total}`;
+        }
+        
+        function selectPayment(method) {
+            selectedPaymentMethod = method;
+            document.querySelectorAll('.payment-method').forEach(m => {
+                m.classList.remove('selected');
+            });
+            event.target.classList.add('selected');
+            
+            // Show/hide invoice section
+            document.getElementById('invoiceSection').classList.toggle('active', method === 'rechnung');
+            
+            // Update required fields
+            const customerName = document.getElementById('customerName');
+            const customerEmail = document.getElementById('customerEmail');
+            if (method === 'rechnung') {
+                customerName.setAttribute('required', 'required');
+                customerEmail.setAttribute('required', 'required');
+            } else {
+                customerName.removeAttribute('required');
+                customerEmail.removeAttribute('required');
+            }
+        }
+        
+        async function confirmBooking() {
+            const totalPassengers = tickets.adults + tickets.children + tickets.wheelchairAdults + tickets.wheelchairChildren;
+            
+            if (totalPassengers === 0) {
+                alert('Bitte wählen Sie mindestens ein Ticket aus');
+                return;
+            }
+            
+            // Validate required fields for invoice
+            if (selectedPaymentMethod === 'rechnung') {
+                const customerName = document.getElementById('customerName').value.trim();
+                const customerEmail = document.getElementById('customerEmail').value.trim();
+                const companyName = document.getElementById('companyName').value.trim();
+                
+                if (!customerName || !customerEmail || !companyName) {
+                    alert('Bei Zahlung auf Rechnung sind Name, E-Mail und Firmenname erforderlich');
+                    return;
+                }
+            }
+            
+            // Prepare booking data
+            const bookingData = {
+                tourType: selectedTour.type,
+                tourDate: selectedTour.date,
+                tourTime: selectedTour.time,
+                customerName: document.getElementById('customerName').value || null,
+                customerEmail: document.getElementById('customerEmail').value || null,
+                adults: tickets.adults,
+                children: tickets.children,
+                babies: tickets.babies,
+                wheelchairAdults: tickets.wheelchairAdults,
+                wheelchairChildren: tickets.wheelchairChildren,
+                skipReservationCheck: true,
+                salesmanBooking: true,
+                paymentMethod: selectedPaymentMethod,
+                invoiceRequested: selectedPaymentMethod === 'rechnung'
+            };
+            
+            // Add invoice data if needed
+            if (selectedPaymentMethod === 'rechnung') {
+                bookingData.invoiceData = {
+                    company: document.getElementById('companyName').value,
+                    taxId: document.getElementById('taxId').value,
+                    street: document.getElementById('street').value,
+                    city: document.getElementById('city').value
+                };
+            }
+            
+            try {
+                const response = await fetch(`${API_URL}/bookings`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(bookingData)
+                });
+                
+                if (response.ok) {
+                    const result = await response.json();
+                    
+                    // Show success modal
+                    document.getElementById('bookingCode').textContent = `Buchungscode: ${result.booking.booking_code}`;
+                    document.getElementById('ticketSummary').textContent = 
+                        `${totalPassengers} Passagiere - ${selectedTour.type === 'UNTERLAND' ? 'Unterland' : 'Premium'}-Tour um ${selectedTour.time} Uhr`;
+                    document.getElementById('paymentInfo').textContent = 
+                        `Gesamtbetrag: €${result.totalAmount} - Zahlungsart: ${
+                            selectedPaymentMethod === 'bar' ? 'Bar' : 
+                            selectedPaymentMethod === 'sumup' ? 'SumUp' : 
+                            'Auf Rechnung'
+                        }`;
+                    
+                    document.getElementById('ticketSelector').classList.remove('active');
+                    document.getElementById('overlay').classList.remove('active');
+                    document.getElementById('successModal').classList.add('active');
+                    
+                } else {
+                    const error = await response.json();
+                    alert('Fehler: ' + error.error);
+                }
+            } catch (error) {
+                console.error('Booking error:', error);
+                alert('Fehler bei der Buchung. Bitte versuchen Sie es erneut.');
+            }
+        }
+        
+        function cancelSelection() {
+            document.getElementById('ticketSelector').classList.remove('active');
+            document.getElementById('overlay').classList.remove('active');
+            selectedTour = null;
+        }
+        
+        function resetAll() {
+            document.getElementById('successModal').classList.remove('active');
+            tickets = { 
+                adults: 0, 
+                children: 0, 
+                babies: 0,
+                wheelchairAdults: 0,
+                wheelchairChildren: 0
+            };
+            selectedTour = null;
+            selectedPaymentMethod = 'bar';
+            
+            // Clear form fields
+            document.getElementById('customerName').value = '';
+            document.getElementById('customerEmail').value = '';
+            document.getElementById('companyName').value = '';
+            document.getElementById('taxId').value = '';
+            document.getElementById('street').value = '';
+            document.getElementById('city').value = '';
+            
+            loadAvailability();
         }
         
         // Bookings management
@@ -1264,7 +1693,12 @@
                     (stats.totalPassengers / stats.totalBookings).toFixed(1) : 0;
                 document.getElementById('avgGroupSize').textContent = avgSize;
                 
-                // Payment breakdown
+                // Update charts
+                updateRevenueChart(stats);
+                updatePaymentChart(stats);
+                updateOccupancyChart(stats);
+                
+                // Payment breakdown table
                 const paymentBreakdown = document.getElementById('paymentBreakdown');
                 paymentBreakdown.innerHTML = Object.entries(stats.byPaymentMethod).map(([method, data]) => {
                     const methodName = {
@@ -1274,15 +1708,18 @@
                         'rechnung': 'Auf Rechnung'
                     }[method];
                     
+                    const percentage = stats.totalRevenue > 0 ? 
+                        ((data.revenue / stats.totalRevenue) * 100).toFixed(1) : 0;
+                    
                     return `
                         <div class="payment-row">
                             <span class="payment-method">${methodName}</span>
-                            <span class="payment-amount">€${data.revenue.toFixed(2)} (${data.count} Buchungen)</span>
+                            <span class="payment-amount">€${data.revenue.toFixed(2)} (${percentage}%)</span>
                         </div>
                     `;
                 }).join('');
                 
-                // Tour statistics
+                // Tour statistics with visual occupancy bars
                 const tourStatistics = document.getElementById('tourStatistics');
                 let tourStatsHtml = '';
                 
@@ -1291,71 +1728,279 @@
                     const tourStats = stats.tourStatistics[tourType];
                     const occupancyRates = stats.occupancyRates[tourType];
                     
-                    tourStatsHtml += `<h3 style="margin: 1rem 0; color: #333;">${tourName}</h3>`;
+                    tourStatsHtml += `<h3 style="margin: 1.5rem 0 1rem; color: #333; font-weight: 600;">${tourName}</h3>`;
                     tourStatsHtml += '<div class="tour-stats-grid">';
                     
                     Object.entries(tourStats).forEach(([time, timeStats]) => {
                         const occupancy = parseFloat(occupancyRates[time] || 0);
                         const occupancyClass = occupancy > 70 ? 'high' : occupancy < 30 ? 'low' : '';
-                        
-                        tourStatsHtml += `
-                            <div class="tour-stat-box">
-                                <div class="tour-stat-header">
-                                    <span class="tour-stat-time">${time} Uhr</span>
-                                    <span class="occupancy-badge ${occupancyClass}">${occupancy}% Auslastung</span>
-                                </div>
-                                <div class="tour-stat-details">
-                                    <div><strong>Ø ${timeStats.averagePassengers} Passagiere</strong> pro Tour</div>
-                                    <div>${timeStats.totalTours} Touren durchgeführt</div>
-                                    <div>€${timeStats.averageRevenue} Ø Umsatz</div>
-                                    <div>${timeStats.totalPassengers} Passagiere gesamt</div>
-                                </div>
-                            </div>
-                        `;
-                    });
-                    
-                    tourStatsHtml += '</div>';
-                });
-                
-                tourStatistics.innerHTML = tourStatsHtml;
-                
-            } catch (error) {
-                console.error('Error loading statistics:', error);
-                alert('Fehler beim Laden der Statistiken');
-            }
-        }
-        
-        // Keep all existing sales functionality functions...
-        function selectTour(tourType, time, element) {
-            // Implementation already exists above
-        }
-        
-        function cancelSelection() {
-            document.getElementById('ticketSelector').classList.remove('active');
-            document.getElementById('overlay').classList.remove('active');
-            selectedTour = null;
-        }
-        
-        function resetAll() {
-            document.getElementById('successModal').classList.remove('active');
-            tickets = { 
-                adults: 0, 
-                children: 0, 
-                babies: 0,
-                wheelchairAdults: 0,
-                wheelchairChildren: 0
-            };
-            selectedTour = null;
-            selectedPaymentMethod = 'bar';
-            loadAvailability();
-        }
-        
-        // Initialize current date display
-        if (activeTab === 'bookings') {
-            const today = new Date().toISOString().split('T')[0];
-            document.getElementById('filterStartDate').value = today;
-            document.getElementById('filterEndDate').value = today;
-        }
-    </script>
+                       
+                       tourStatsHtml += `
+                           <div class="tour-stat-box">
+                               <div class="tour-stat-header">
+                                   <span class="tour-stat-time">${time} Uhr</span>
+                                   <span class="occupancy-badge ${occupancyClass}">${occupancy}% Auslastung</span>
+                               </div>
+                               <div class="tour-stat-details">
+                                   <div><strong>Ø ${timeStats.averagePassengers} Passagiere</strong> pro Tour</div>
+                                   <div>${timeStats.totalTours} Touren durchgeführt</div>
+                                   <div>€${timeStats.averageRevenue} Ø Umsatz</div>
+                                   <div>${timeStats.totalPassengers} Passagiere gesamt</div>
+                               </div>
+                               <div class="progress-bar">
+                                   <div class="progress-fill" style="background: ${occupancy > 70 ? '#4caf50' : occupancy < 30 ? '#ff9800' : '#2196f3'}; 
+                                              width: ${occupancy}%;"></div>
+                               </div>
+                           </div>
+                       `;
+                   });
+                   
+                   tourStatsHtml += '</div>';
+               });
+               
+               tourStatistics.innerHTML = tourStatsHtml;
+               
+           } catch (error) {
+               console.error('Error loading statistics:', error);
+               alert('Fehler beim Laden der Statistiken');
+           }
+       }
+       
+       // Chart update functions
+       function updateRevenueChart(stats) {
+           const ctx = document.getElementById('revenueChart').getContext('2d');
+           
+           // Prepare data for the chart
+           const months = Object.keys(stats.byMonth).sort();
+           const revenues = months.map(m => stats.byMonth[m].revenue);
+           const bookings = months.map(m => stats.byMonth[m].count);
+           
+           // Destroy existing chart if it exists
+           if (revenueChart) {
+               revenueChart.destroy();
+           }
+           
+           // Create new chart
+           revenueChart = new Chart(ctx, {
+               type: 'line',
+               data: {
+                   labels: months.map(m => {
+                       const [year, month] = m.split('-');
+                       return new Date(year, month - 1).toLocaleDateString('de-DE', { month: 'short', year: '2-digit' });
+                   }),
+                   datasets: [{
+                       label: 'Umsatz (€)',
+                       data: revenues,
+                       borderColor: '#0066cc',
+                       backgroundColor: 'rgba(0, 102, 204, 0.1)',
+                       yAxisID: 'y',
+                       tension: 0.4,
+                       borderWidth: 3
+                   }, {
+                       label: 'Buchungen',
+                       data: bookings,
+                       borderColor: '#00a651',
+                       backgroundColor: 'rgba(0, 166, 81, 0.1)',
+                       yAxisID: 'y1',
+                       tension: 0.4,
+                       borderWidth: 3
+                   }]
+               },
+               options: {
+                   responsive: true,
+                   maintainAspectRatio: false,
+                   interaction: {
+                       mode: 'index',
+                       intersect: false,
+                   },
+                   plugins: {
+                       legend: {
+                           labels: {
+                               font: {
+                                   family: 'Montserrat'
+                               }
+                           }
+                       }
+                   },
+                   scales: {
+                       y: {
+                           type: 'linear',
+                           display: true,
+                           position: 'left',
+                           title: {
+                               display: true,
+                               text: 'Umsatz (€)',
+                               font: {
+                                   family: 'Montserrat'
+                               }
+                           },
+                           ticks: {
+                               font: {
+                                   family: 'Montserrat'
+                               }
+                           }
+                       },
+                       y1: {
+                           type: 'linear',
+                           display: true,
+                           position: 'right',
+                           title: {
+                               display: true,
+                               text: 'Anzahl Buchungen',
+                               font: {
+                                   family: 'Montserrat'
+                               }
+                           },
+                           grid: {
+                               drawOnChartArea: false,
+                           },
+                           ticks: {
+                               font: {
+                                   family: 'Montserrat'
+                               }
+                           }
+                       },
+                       x: {
+                           ticks: {
+                               font: {
+                                   family: 'Montserrat'
+                               }
+                           }
+                       }
+                   }
+               }
+           });
+       }
+       
+       function updatePaymentChart(stats) {
+           const ctx = document.getElementById('paymentChart').getContext('2d');
+           
+           const paymentData = Object.entries(stats.byPaymentMethod)
+               .filter(([_, data]) => data.revenue > 0);
+           
+           const labels = paymentData.map(([method, _]) => ({
+               'online': 'Online',
+               'bar': 'Bar',
+               'sumup': 'SumUp',
+               'rechnung': 'Auf Rechnung'
+           }[method]));
+           
+           const data = paymentData.map(([_, data]) => data.revenue);
+           
+           if (paymentChart) {
+               paymentChart.destroy();
+           }
+           
+           paymentChart = new Chart(ctx, {
+               type: 'doughnut',
+               data: {
+                   labels: labels,
+                   datasets: [{
+                       data: data,
+                       backgroundColor: [
+                           '#0066cc',
+                           '#00a651',
+                           '#ff6600',
+                           '#8B4513'
+                       ],
+                       borderWidth: 2,
+                       borderColor: '#fff'
+                   }]
+               },
+               options: {
+                   responsive: true,
+                   maintainAspectRatio: false,
+                   plugins: {
+                       legend: {
+                           position: 'bottom',
+                           labels: {
+                               padding: 15,
+                               font: {
+                                   family: 'Montserrat',
+                                   size: 12
+                               }
+                           }
+                       }
+                   }
+               }
+           });
+       }
+       
+       function updateOccupancyChart(stats) {
+           const ctx = document.getElementById('occupancyChart').getContext('2d');
+           
+           // Prepare data for all tour times
+           const unterlandTimes = Object.keys(stats.occupancyRates.UNTERLAND);
+           const premiumTimes = Object.keys(stats.occupancyRates.PREMIUM);
+           
+           const unterlandOccupancy = unterlandTimes.map(time => parseFloat(stats.occupancyRates.UNTERLAND[time] || 0));
+           const premiumOccupancy = premiumTimes.map(time => parseFloat(stats.occupancyRates.PREMIUM[time] || 0));
+           
+           if (occupancyChart) {
+               occupancyChart.destroy();
+           }
+           
+           occupancyChart = new Chart(ctx, {
+               type: 'bar',
+               data: {
+                   labels: [...unterlandTimes.map(t => `U ${t}`), ...premiumTimes.map(t => `P ${t}`)],
+                   datasets: [{
+                       label: 'Auslastung (%)',
+                       data: [...unterlandOccupancy, ...premiumOccupancy],
+                       backgroundColor: [
+                           ...unterlandOccupancy.map(rate => rate > 70 ? '#4caf50' : rate < 30 ? '#ff9800' : '#2196f3'),
+                           ...premiumOccupancy.map(rate => rate > 70 ? '#4caf50' : rate < 30 ? '#ff9800' : '#2196f3')
+                       ],
+                       borderRadius: 6,
+                       borderWidth: 0
+                   }]
+               },
+               options: {
+                   responsive: true,
+                   maintainAspectRatio: false,
+                   scales: {
+                       y: {
+                           beginAtZero: true,
+                           max: 100,
+                           ticks: {
+                               callback: function(value) {
+                                   return value + '%';
+                               },
+                               font: {
+                                   family: 'Montserrat'
+                               }
+                           },
+                           title: {
+                               display: true,
+                               text: 'Auslastung',
+                               font: {
+                                   family: 'Montserrat'
+                               }
+                           }
+                       },
+                       x: {
+                           ticks: {
+                               font: {
+                                   family: 'Montserrat'
+                               }
+                           }
+                       }
+                   },
+                   plugins: {
+                       legend: {
+                           display: false
+                       }
+                   }
+               }
+           });
+       }
+       
+       // Initialize current date display
+       if (activeTab === 'bookings') {
+           const today = new Date().toISOString().split('T')[0];
+           document.getElementById('filterStartDate').value = today;
+           document.getElementById('filterEndDate').value = today;
+       }
+   </script>
 </body>
 </html>
