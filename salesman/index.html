@@ -1343,7 +1343,28 @@
         }
         
         function updateTickets(type, change) {
-            tickets[type] = Math.max(0, tickets[type] + change);
+            const newValue = tickets[type] + change;
+            if (newValue < 0) return;
+            
+            // Calculate total seats needed
+            let totalSeatsNeeded = 0;
+            const tempTickets = {...tickets};
+            tempTickets[type] = newValue;
+            
+            totalSeatsNeeded = tempTickets.adults + tempTickets.children;
+            totalSeatsNeeded += (tempTickets.wheelchairAdults + tempTickets.wheelchairChildren) * 3;
+            
+            // Get available capacity
+            const tourData = availabilityData[selectedTour.type].times[selectedTour.time];
+            const bookedSeats = tourData.capacity - tourData.available;
+            const salesmanAvailable = SALESMAN_CAPACITY[selectedTour.type] - bookedSeats;
+            
+            if (totalSeatsNeeded > salesmanAvailable) {
+                alert(`Nur noch ${salesmanAvailable} Plätze verfügbar!`);
+                return;
+            }
+            
+            tickets[type] = newValue;
             updateTicketDisplay();
         }
         
@@ -1519,7 +1540,7 @@
                 if (status) params.append('status', status);
                 if (tourType) params.append('tourType', tourType);
                 
-                const response = await fetch(`${API_URL}/admin/bookings?${params}`);
+                const response = await fetch(`${API_URL}/admin/bookings?${params}&_sort=tour_date,tour_time&_order=desc`);
                 const data = await response.json();
                 
                 if (data.bookings.length === 0) {
